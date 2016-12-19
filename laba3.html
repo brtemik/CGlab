@@ -1,0 +1,109 @@
+<html>
+<body>
+<p>Безруков А.Р ИУ8-51 лаба 3</p>
+<p>тыкнуть 3 точки - получится кривая</p>
+
+<canvas id='canvas01' width='600' height='600'>
+	<script>
+  
+  
+	var canvas = document.getElementById('canvas01');
+	var ctx = canvas.getContext('2d');
+	canvas.addEventListener("click", onClick);
+		
+	ctx.fillStyle="#f0f0f0";
+	ctx.fillRect(0,0,canvas.width,canvas.height);  // grey
+
+	var points = [];
+	var num_of_points = 0;
+
+
+	// Фукнция рисования линии ИЗ и В
+	function draw_line(X0, Y0, X1, Y1) {
+		X0 = Math.floor(X0);
+		Y0 = Math.floor(Y0);
+		X1 = Math.floor(X1);
+		Y1 = Math.floor(Y1);
+		
+		
+		var deltaX = Math.abs(X1 - X0);
+		var deltaY = Math.abs(Y1 - Y0);
+		var dX_more = deltaX >= deltaY;
+		var error = 0;
+		var addX = X0 < X1 ? 1 : -1;
+		var addY = Y0 < Y1 ? 1 : -1;
+		
+		if ( dX_more ) {
+			var deltaErr = deltaY;
+			var y = Y0;
+			for ( x = X0 ; x != X1 ; x += addX ) {
+				ctx.fillRect(x,y,1,1);
+				error += deltaErr;
+				if ( 2 * error >= deltaX ) {
+					y += addY;
+					error -= deltaX;
+				}
+			}
+		}
+		else {
+			var deltaErr = deltaX;
+			var x = X0;
+			for ( y = Y0 ; y != Y1 ; y += addY ) {
+				ctx.fillRect(x,y,1,1);
+				error += deltaErr;
+				if ( 2 * error >= deltaY ) {
+					x += addX;
+					error -= deltaY;
+				}
+			}
+		}
+	}
+	
+	function draw_bezier3p(X0,Y0,X1,Y1,X2,Y2) {	
+		ctx.fillStyle="#000000";
+		
+		var x = 0.0;
+		var y = 0.0;
+		var xp = X0;
+		var yp = Y0;
+		
+		for (var t=0.05; t<=1.05; t+=0.05) {
+			x = (1-t)*(1-t)*X0 + 2*(1-t)*t*X1 + t*t*X2;
+			y = (1-t)*(1-t)*Y0 + 2*(1-t)*t*Y1 + t*t*Y2;
+			
+			draw_line(xp,yp,x,y);
+			
+			xp = x;
+			yp = y;
+		}
+	  
+	}
+	
+	function onClick()
+	{	
+		if (event.which == 1) {			
+			var x = event.offsetX;		
+			var y = event.offsetY;	
+			ctx.fillStyle="#000000";
+			ctx.fillRect(x,y,1,1);
+			
+			points[num_of_points] = {x,y};
+			num_of_points++;
+			
+			if ( num_of_points == 3 ) {
+			  num_of_points = 0;
+			  draw_bezier3p( points[0].x,points[0].y,
+							 points[1].x,points[1].y,
+							 points[2].x,points[2].y);
+			}
+		}
+
+	}
+
+	
+  
+  </script>
+</canvas>
+
+</body>
+</html>

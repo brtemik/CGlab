@@ -1,0 +1,194 @@
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>LAB_FILLING</title>
+</head>
+
+<body>
+<p>Безруков А.Р ИУ8-51 лаба 4</p>
+<p>Рисуем фигурку пкм, скм закрашиваем</p>
+
+<canvas id='canvas01' width='500' height='300'>
+	<script>
+  
+  
+	var points = [];
+	var num_of_points = 0;
+	
+	var canvas = document.getElementById('canvas01');
+	var ctx = canvas.getContext('2d');
+	canvas.addEventListener("click", onClick);
+		
+	ctx.fillStyle="#f0f0f0";
+	ctx.fillRect(0,0,canvas.width,canvas.height);  // grey
+	
+	/*ctx.fillStyle="#FF0000";
+	draw_line(0,30,600,30);
+
+	var debug_counter = 0;*/
+
+	// Фукнция рисования линии ИЗ и В
+	function draw_line(X0, Y0, X1, Y1) {
+		X0 = Math.floor(X0);
+		Y0 = Math.floor(Y0);
+		X1 = Math.floor(X1);
+		Y1 = Math.floor(Y1);
+		
+		
+		var deltaX = Math.abs(X1 - X0);
+		var deltaY = Math.abs(Y1 - Y0);
+		var dX_more = deltaX >= deltaY;
+		var error = 0;
+		var addX = X0 < X1 ? 1 : -1;
+		var addY = Y0 < Y1 ? 1 : -1;
+		
+		if ( dX_more ) {
+			var deltaErr = deltaY;
+			var y = Y0;
+			for ( x = X0 ; x != X1 ; x += addX ) {
+				ctx.fillRect(x,y,1,1);
+				error += deltaErr;
+				if ( 2 * error >= deltaX ) {
+					y += addY;
+					error -= deltaX;
+				}
+			}
+		}
+		else {
+			var deltaErr = deltaX;
+			var x = X0;
+			for ( y = Y0 ; y != Y1 ; y += addY ) {
+				ctx.fillRect(x,y,1,1);
+				error += deltaErr;
+				if ( 2 * error >= deltaY ) {
+					x += addX;
+					error -= deltaY;
+				}
+			}
+		}
+	}
+	
+	// обработчик кликов
+	function onClick()
+	{	
+		// ЛКМ
+		if (event.which == 1) {			
+			var x = event.offsetX;		
+			var y = event.offsetY;	
+			
+			points[num_of_points] = {x,y};
+			num_of_points++;
+			
+			//alert("x="+x+" y="+y);
+			
+			ctx.fillStyle="#000000";
+			if (num_of_points == 1) 
+				ctx.fillRect(x,y,1,1);
+			else
+				draw_line(	points[num_of_points-2].x, 
+							points[num_of_points-2].y,
+							x,
+							y );
+		}
+		
+		// СКМ
+		else if (event.which == 2) {
+		
+			if (num_of_points < 3) return;
+			
+			var x = points[0].x;
+			var y = points[0].y;
+			points[num_of_points] = {x,y};
+			num_of_points++;
+			
+			draw_line(	points[num_of_points-2].x, 
+						points[num_of_points-2].y,
+						points[num_of_points-1].x, 
+						points[num_of_points-1].y );
+						
+			draw_polynom(get_random_color(),get_random_color());
+			num_of_points = 0;
+		}
+	}
+	
+	function get_random_color() {
+		var int_color = Math.floor(Math.random() * (0xFFFFFF - 0 + 1)) + 0;
+		return "#"+int_color.toString(16);
+	}
+	
+	// Фукнция закраски полинома
+	function draw_polynom(fill_color, border_color) {
+				
+		var y_max = points[0].y;
+		var y_min = y_max;
+		for (var i=0; i<num_of_points; i++) {
+			if (points[i].y > y_max) 
+				y_max = points[i].y;
+			else if (points[i].y < y_min) 
+				y_min = points[i].y;
+		}
+		
+		// закраска построчно
+		ctx.fillStyle=fill_color;
+		for (var y=y_max; y>=y_min; y--)
+			fill_polynom_lyne(y);
+			
+		// перекраска контуров
+		ctx.fillStyle=border_color;
+		for (var i=1; i<num_of_points; i++)
+			draw_line(	points[i-1].x,
+						points[i-1].y,
+						points[i].x,
+						points[i].y );
+	}
+	
+	// Фукнция закраски строки полинома
+	function fill_polynom_lyne(Y) {
+		var chp = [];				// check_positions
+		var num_of_chp = 0;
+		
+		for (var i=1; i<num_of_points; i++) {
+			if (    Y<=points[i].y && Y>points[i-1].y 
+				    || Y>points[i].y && Y<=points[i-1].y ) {
+				var xk = points[i].x;
+				var yi = points[i].y;
+				var xi = points[i-1].x;
+				var yk = points[i-1].y;
+				chp[num_of_chp] = Math.round(xi+((yk-Y)*(xk-xi))/(yk-yi));
+				num_of_chp++;
+			}
+		}
+		
+		if ( num_of_chp % 2 == 1 ) {
+			//alert("Нечетное число точек в Y = "+Y+". Сброс отрисовки строки");
+			return;
+		}
+		
+		if ( num_of_chp == 0 ) {
+			return;    	// Отрисовка не требуется
+		}
+		
+		//сортировка
+		for (var i=0; i<num_of_chp-1; i++)
+			for (var j=num_of_chp-1; j>=0; j--)
+				if ( chp[j]>chp[j+1] ) {
+					var m = chp[j+1];
+					chp[j+1] = chp[j];
+					chp[j] = m;
+				}
+				
+				
+		// между каждой нечетной парой контольных точек отрисовываем линию
+		for (var i=0; i<num_of_chp/2; i++) {
+			//отрисовываем линию
+			for (var j=chp[2*i]+1; j<chp[2*i+1]; j++) {
+				ctx.fillRect(j,Y,1,1);
+			}
+		}
+	}
+  
+	</script>
+</canvas>
+
+</body>
+</html>
